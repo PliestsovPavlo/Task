@@ -84,7 +84,7 @@ public class Adaptor implements RemoteAdaptor, Serializable, Runnable {
 
 	@Override
 	public Adaptor takeAdaptor() throws RemoteException, InterruptedException {
-		return this;
+		return new Adaptor();
 	}
 
 	public List<Worker> getWorkers() {

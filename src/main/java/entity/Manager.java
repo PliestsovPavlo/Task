@@ -115,13 +115,13 @@ public class Manager implements RemoteManager, Serializable {
 			try {
 				Registry registry = LocateRegistry.getRegistry(ip, port);
 				remoteAdaptor = (RemoteAdaptor) registry.lookup("adaptor");
-				adaptor = remoteAdaptor.takeAdaptor();
 				synchronized (remoteAdaptor) {
 					remoteAdaptor.notify();
+					adaptor = remoteAdaptor.takeAdaptor();
+					this.adaptors.add(adaptor);
+					System.out.println(adaptor);
 				}
-				System.out.println(adaptor);
-//				this.adaptors.add(adaptor);
-				this.addAdaptor(adaptor);
+//				this.addAdaptor(adaptor);
 				System.out.println("adap added");
 				synchronized (remoteAdaptor) {
 					remoteAdaptor.notify();
