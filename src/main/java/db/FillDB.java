@@ -13,6 +13,7 @@ import helpers.redis.RedisHelperImpl;
 public class FillDB {
 	public static void main(String[] args) throws IOException, InterruptedException, NotBoundException, ExecutionException {
 
+		// apis set
 		Set<String> apis = new HashSet<>();
 		apis.add("google");
 		apis.add("yandex");
