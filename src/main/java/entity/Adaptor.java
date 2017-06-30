@@ -29,11 +29,13 @@ public class Adaptor implements RemoteAdaptor, Serializable {
 
 	@Override
 	public void doWork(Job job) {
+		System.out.println("Now inside adaptor and will launch a worker..");
 		if(pool == null) pool = Executors.newFixedThreadPool(3);
 		pool.execute(new Worker(this, job));
 	}
 
-	public Adaptor() throws RemoteException, InterruptedException {
+	private void connectAdaptor() throws RemoteException
+	{
 		registry = LocateRegistry.createRegistry(2097);
 		remoteAdaptor = (RemoteAdaptor) UnicastRemoteObject.exportObject(this, 0);
 		registry.rebind("adaptor", remoteAdaptor);
@@ -48,11 +50,11 @@ public class Adaptor implements RemoteAdaptor, Serializable {
 			remoteManager.addAdaptor(this);
 		}catch (Exception e) {
 			System.err.println(e.toString());
-			synchronized (this) {
-				System.out.println("wait........");
-				this.wait();
-			}
 		}
+	}
+	
+	public Adaptor() throws RemoteException, InterruptedException {
+		connectAdaptor();
 	}
 
 	private List<Worker> generateWorkers(Adaptor a) {
@@ -86,13 +88,17 @@ public class Adaptor implements RemoteAdaptor, Serializable {
 
 	@Override
 	public boolean hasAvailableWorkers() throws RemoteException {
-		return (workerCount.get() < 3);
+		int calls = workerCount.get();
+		System.out.println("Checking available calls... " + calls);
+		return (calls < 3);
 	}
 
 	public void returnJobToManager(Job job)
 	{
 		try {
+			System.out.println("On manager side..");
 			this.manager.jobExecuted(job);
+			System.out.println("Decrementing Worker Count..");
 			this.decrementWorkersCount();
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
@@ -103,12 +109,14 @@ public class Adaptor implements RemoteAdaptor, Serializable {
 	@Override
 	public int incrementWorkersCount()
 	{
+		System.out.println("Incrementing calls");
 		return this.workerCount.incrementAndGet();
 	}
 	
 	@Override
 	public int decrementWorkersCount()
 	{
+		System.out.println("Decrementing calls");
 		return this.workerCount.decrementAndGet();
 	}
 	

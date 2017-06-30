@@ -31,7 +31,7 @@ public class MainAdaptor2 {
 				
 			synchronized (remoteManager) {
 				System.out.println("Manager NOTIFIED");
-				remoteManager.notifyManager();
+				//remoteManager.notifyManager();
 			}
 						
 		} catch (Exception e) {

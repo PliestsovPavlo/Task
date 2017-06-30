@@ -15,6 +15,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
+import db.FillDB;
 import helpers.json.JsonHelper;
 import helpers.json.JsonHelperImpl;
 import helpers.redis.RedisHelper;
@@ -30,9 +31,11 @@ public class Manager implements RemoteManager, Serializable {
 	private String ip = "localhost";
 	private RedisHelper redis = new RedisHelperImpl();
 	private List<RemoteAdaptor> adaptors = new ArrayList<>();
+	private JsonHelper jsonHelper = new JsonHelperImpl();
 
 	public Manager()
 	{
+		
 		//create & register manager
 		bindSelf();
 		connectAdaptors();
@@ -114,34 +117,16 @@ public class Manager implements RemoteManager, Serializable {
 		}
 	}
 
-	public void pushJob(Job job){
-		JsonHelper jsonHelper = new JsonHelperImpl();
+	public void pushJob(Job job) {
 		String jobString;
-		try {
-			jobString = jsonHelper.serialize(job);
+		jobString = jsonHelper.serialize(job);
+		if(jobString != null)
 			this.redis.lpush(key, jobString);
-		} catch (JsonProcessingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 
 	private Job pullJob(){
 		String str = this.redis.lpop(key);
-		JsonHelper jsonHelper = new JsonHelperImpl();
-		Job job = new Job();
-		try {
-			job = (Job) jsonHelper.deserialize(str, job);
-		} catch (JsonParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (JsonMappingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		Job job = (Job) jsonHelper.deserialize(str, new Job());
 		return job;
 	}
 
@@ -170,6 +155,7 @@ public class Manager implements RemoteManager, Serializable {
 	@Override
 	public void jobExecuted(Job job) throws RemoteException
 	{
-		
+		System.out.println("Now inside manager");
+		System.out.println(job);
 	}
 }

@@ -13,7 +13,7 @@ public class Worker implements Runnable, Serializable {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	
+
 	private String name;
 	private Job job;
 	private Adaptor adaptor;
@@ -27,7 +27,7 @@ public class Worker implements Runnable, Serializable {
 
 	public Worker(Adaptor adaptor2, Job job2) {
 		this.adaptor = adaptor2;
-		this.job = job;
+		this.job = job2;
 	}
 
 	public Job getJob() {
@@ -40,43 +40,32 @@ public class Worker implements Runnable, Serializable {
 
 	@Override
 	public void run() {
-		try {
-			if (job != null) {
-				synchronized (job) {
-					this.setBuzy(true);
-					limitCalls--;
-					executorService = Executors.newFixedThreadPool(job.getApis().size());
+		if (job != null) {
+			System.out.println("---> Now inside Worker...");
+			limitCalls--;
+			executorService = Executors.newFixedThreadPool(job.getApis().size());
 
-					Future<Job> fJob = null;
-					for (String api : job.getApis()) {
-						if (api.equalsIgnoreCase("google")) {
-							fJob = executorService.submit(new Api1(job));
-						}
-						if (api.equalsIgnoreCase("yandex")) {
-							fJob = executorService.submit(new Api2(job));
-						}
-					}
-
-					System.err.println(fJob.get() + "\n");
-
-					this.setBuzy(false);
-					executorService.shutdown();
-
-					synchronized (adaptor) {
-						adaptor.notify();
-//						System.out.println("worker notify adaptor");
-					}
-					synchronized (this) {
-//						System.out.println("worker sleep");
-						this.wait();
-					}
+			Future<Job> fJob = null;
+			for (String api : job.getApis()) {
+				if (api.equalsIgnoreCase("google")) {
+					fJob = executorService.submit(new Api1(job));
+				}
+				if (api.equalsIgnoreCase("yandex")) {
+					fJob = executorService.submit(new Api2(job));
 				}
 			}
-		} catch (InterruptedException e) {
-			System.err.println(e.toString());
-		} catch (ExecutionException e) {
-			System.err.println(e.toString());
+
+			try {
+				System.out.println("Returning job to manager");
+				adaptor.returnJobToManager(fJob.get());
+			} catch (InterruptedException | ExecutionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			executorService.shutdown();
 		}
+
 	}
 
 	public boolean isBuzy() {

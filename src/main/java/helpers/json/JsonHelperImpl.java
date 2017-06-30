@@ -1,23 +1,49 @@
 package helpers.json;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-
-import entity.Job;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 public class JsonHelperImpl implements JsonHelper{
 
-	private JacksonHelperImpl jacksonHelperImpl = new JacksonHelperImpl();
-	
-	public String serialize(Job job) throws JsonProcessingException{
-		return jacksonHelperImpl.serialize(job);
+    private ObjectMapper jackson;
+
+	public JsonHelperImpl(){
+		init();
 	}
 	
-	public Object deserialize(String str, Object j) throws JsonParseException, JsonMappingException, IOException{
-		return jacksonHelperImpl.deserialize(str, j);
+    private void init()
+    {
+	this.jackson = new ObjectMapper();
+	this.jackson.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true);
+	this.jackson.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
+
+    @Override
+    public Object deserialize(String string, Object object)
+    {
+	try
+	{
+	    return this.jackson.readValue(string, object.getClass());
+	} catch (Exception ex)
+	{
+	    return null;
+	}
+    }
+
+
+	@Override
+	public String serialize(Object job)
+	{
+		try 
+		{
+			return jackson.writeValueAsString(job);
+		} catch (JsonProcessingException e)
+		{
+			e.printStackTrace();
+		}
+		return null;
 	}
 }
 
