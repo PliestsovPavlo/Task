@@ -29,74 +29,129 @@ public class Manager implements RemoteManager, Serializable {
 	private int[] ports = { 2097, 2098 };
 	private String ip = "localhost";
 	private RedisHelper redis = new RedisHelperImpl();
-	private List<Adaptor> adaptors = new ArrayList<>();
-	private Adaptor adaptor;
-	private RemoteAdaptor remoteAdaptor;
+	private List<RemoteAdaptor> adaptors = new ArrayList<>();
 
-	public Manager() throws InterruptedException, NotBoundException, JsonParseException, JsonMappingException,
-			ExecutionException, IOException {
+	public Manager()
+	{
 		//create & register manager
-		Registry registry = LocateRegistry.createRegistry(2099);
-		RemoteManager remoteManager = (RemoteManager) UnicastRemoteObject.exportObject(this, 0);
-		registry.rebind("manager", remoteManager);
+		bindSelf();
 		connectAdaptors();
-
-	}
-
-	private void connectAdaptors() throws InterruptedException, NotBoundException, JsonParseException,
-			JsonMappingException, ExecutionException, IOException {
-		
-		//if adaptor not registered
-		notifyManager();
 		this.doJob();
 	}
 
-	public void doJob()
-			throws InterruptedException, ExecutionException, JsonParseException, JsonMappingException, IOException {
+	private boolean bindSelf()
+	{
+		Registry registry;
+		try 
+		{
+			registry = LocateRegistry.createRegistry(2099);
+			RemoteManager remoteManager = (RemoteManager) UnicastRemoteObject.exportObject(this, 0);
+			registry.rebind("manager", remoteManager);
+			return true;
+		} catch (RemoteException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return false;
+	}
+	private void connectAdaptors()
+	{
+		for (int port : this.ports) 
+		{
+			try 
+			{
+				Registry registry = LocateRegistry.getRegistry(ip, port);
+				RemoteAdaptor remoteAdaptor = (RemoteAdaptor) registry.lookup("adaptor");
+				remoteAdaptor.setManager(this);
+				remoteAdaptor.notifyAdaptor();
+
+				System.out.println(remoteAdaptor);
+//				this.adaptors.add(adaptor);
+				this.addAdaptor(remoteAdaptor);
+				System.out.println("adap added");
+			} catch (Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void doJob(){
 
 		while (true) {
 			Job job = pullJob();
 			if (job != null) {
-				adaptor = getAvailableAdaptor(adaptors);
+				RemoteAdaptor adaptor = getAvailableAdaptor();
 				if (adaptor != null) {
-					synchronized (adaptor) {
+					try {
 						adaptor.doWork(job);
+					} catch (RemoteException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}
 				} else {
 					pushJob(job);
 					System.out.println("job pushed back to redis and manager wait");
 					synchronized (this) {
-						System.out.println("Manager waiting");
-						this.wait();
+						try {
+							this.wait();
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 					}
 				}
 			} else {
 				System.out.println("no jobs in queue");
-				Thread.sleep(2000);
+				try {
+					Thread.sleep(2000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
 	}
 
-	public void pushJob(Job job) throws JsonProcessingException {
+	public void pushJob(Job job){
 		JsonHelper jsonHelper = new JsonHelperImpl();
-		String jobString = jsonHelper.serialize(job);
-		this.redis.lpush(key, jobString);
+		String jobString;
+		try {
+			jobString = jsonHelper.serialize(job);
+			this.redis.lpush(key, jobString);
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
-	private Job pullJob() throws JsonParseException, JsonMappingException, IOException {
+	private Job pullJob(){
 		String str = this.redis.lpop(key);
 		JsonHelper jsonHelper = new JsonHelperImpl();
 		Job job = new Job();
-		job = (Job) jsonHelper.deserialize(str, job);
+		try {
+			job = (Job) jsonHelper.deserialize(str, job);
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (JsonMappingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return job;
 	}
 
-	private Adaptor getAvailableAdaptor(List<Adaptor> adaptors) {
-		for (Adaptor adaptor : adaptors) {
-			for (Worker worker : adaptor.getWorkers()) {
-				if (!worker.isBuzy() && worker.getLimitCalls() > 0) {
-					return adaptor;
-				}
+	private RemoteAdaptor getAvailableAdaptor() {
+		for (RemoteAdaptor adaptor : this.adaptors) {
+			try {
+				if(adaptor.hasAvailableWorkers()) return adaptor;
+			} catch (RemoteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
 		System.out.println("no adaptor available");
@@ -104,37 +159,17 @@ public class Manager implements RemoteManager, Serializable {
 	}
 
 	@Override
-	public Manager takeManager() throws InterruptedException, NotBoundException, JsonParseException,
-			JsonMappingException, ExecutionException, IOException {
-		return new Manager();
-	}
-
-	@Override
-	public void notifyManager() throws RemoteException, NotBoundException, InterruptedException {
-		for (int port : this.ports) {
-			try {
-				Registry registry = LocateRegistry.getRegistry(ip, port);
-				remoteAdaptor = (RemoteAdaptor) registry.lookup("adaptor");
-				adaptor = remoteAdaptor.takeAdaptor();
-				synchronized (remoteAdaptor) {
-					remoteAdaptor.notify();
-				}
-				System.out.println(adaptor);
-//				this.adaptors.add(adaptor);
-				this.addAdaptor(adaptor);
-				System.out.println("adap added");
-				synchronized (remoteAdaptor) {
-					remoteAdaptor.notify();
-				}
-			} catch (Exception e) {
-				System.err.println(e.toString());
-			}
+	public void addAdaptor(RemoteAdaptor adp) throws RemoteException, InterruptedException {
+//		Adaptor a = adp.takeAdaptor();
+		adaptors.add(adp);
+		synchronized (this) {
+			this.notify();
 		}
 	}
 
 	@Override
-	public void addAdaptor(Adaptor adp) throws RemoteException, InterruptedException {
-//		Adaptor a = adp.takeAdaptor();
-		adaptors.add(adp);
+	public void jobExecuted(Job job) throws RemoteException
+	{
+		
 	}
 }

@@ -25,6 +25,11 @@ public class Worker implements Runnable, Serializable {
 		this.adaptor = adaptor;
 	}
 
+	public Worker(Adaptor adaptor2, Job job2) {
+		this.adaptor = adaptor2;
+		this.job = job;
+	}
+
 	public Job getJob() {
 		return job;
 	}

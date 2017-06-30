@@ -7,11 +7,14 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import rmi.RemoteAdaptor;
 import rmi.RemoteManager;
 
-public class Adaptor implements RemoteAdaptor, Serializable, Runnable {
+public class Adaptor implements RemoteAdaptor, Serializable {
 
 	private static final long serialVersionUID = 1L;
 	private List<Worker> workers = new ArrayList<>();
@@ -19,34 +22,15 @@ public class Adaptor implements RemoteAdaptor, Serializable, Runnable {
 	private Job job;
 	private	Registry registry;
 	private RemoteAdaptor remoteAdaptor;
+	private RemoteManager manager;
+	private ExecutorService pool = Executors.newFixedThreadPool(3);
 
+	private AtomicInteger workerCount = new AtomicInteger(0);
 
-	public void doWork(Job job) throws InterruptedException {
-		runWorkers(workers);
-		worker = getAvaliableWorker(workers);
-		if (worker != null) {
-			synchronized (worker) {
-				worker.setJob(job);
-			}
-		} else {
-			System.out.println("no aval worker");
-		}
-	}
-
-	public void runWorkers(List<Worker> workers) throws InterruptedException {
-		for (Worker worker : workers) {
-			if (worker != null) {
-				new Thread(worker).start();
-			}
-		}
-	}
-
-	public Worker getAvaliableWorker(List<Worker> list) {
-		for (Worker worker2 : list) {
-			if (!worker2.isBuzy() && worker2.getLimitCalls() > 0)
-				return worker2;
-		}
-		return null;
+	@Override
+	public void doWork(Job job) {
+		if(pool == null) pool = Executors.newFixedThreadPool(3);
+		pool.execute(new Worker(this, job));
 	}
 
 	public Adaptor() throws RemoteException, InterruptedException {
@@ -54,18 +38,14 @@ public class Adaptor implements RemoteAdaptor, Serializable, Runnable {
 		remoteAdaptor = (RemoteAdaptor) UnicastRemoteObject.exportObject(this, 0);
 		registry.rebind("adaptor", remoteAdaptor);
 		System.out.println("adaptor registered");
-		generateWorkers(this);
-		runWorkers(workers);
 		try{
 			registry = LocateRegistry.getRegistry(2099);
-			RemoteManager remoteManager = (RemoteManager) registry.lookup("manager");
-			synchronized (remoteManager) {
-				remoteManager.notify();
-				System.out.println("notif");
-//				this.setManager(remoteManager.takeManager());
-				
-				remoteManager.addAdaptor(this);
-			}
+			Manager remoteManager = (Manager) registry.lookup("manager");
+			this.manager = remoteManager;
+			remoteManager.notify();
+			System.out.println("notif");
+			//				this.setManager(remoteManager.takeManager());
+			remoteManager.addAdaptor(this);
 		}catch (Exception e) {
 			System.err.println(e.toString());
 			synchronized (this) {
@@ -82,33 +62,55 @@ public class Adaptor implements RemoteAdaptor, Serializable, Runnable {
 		return workers;
 	}
 
-	@Override
-	public Adaptor takeAdaptor() throws RemoteException, InterruptedException {
-		return this;
-	}
-
 	public List<Worker> getWorkers() {
 		return workers;
 	}
 
 	@Override
-	public void run() {
+	public void notifyAdaptor() throws RemoteException {
+		synchronized (this) {
+			this.notify();
+		}		
+	}
+
+	@Override
+	public void setManager(RemoteManager manager) throws RemoteException {
+		this.manager = manager;
+	}
+
+	@Override
+	public int getNumberOfWorkers() throws RemoteException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public boolean hasAvailableWorkers() throws RemoteException {
+		return (workerCount.get() < 3);
+	}
+
+	public void returnJobToManager(Job job)
+	{
 		try {
-			doWork(job);
-		} catch (InterruptedException e) {
-			System.err.println(e.toString());
+			this.manager.jobExecuted(job);
+			this.decrementWorkersCount();
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
-
+	
 	@Override
-	public void notifyAdaptor() throws RemoteException {
-		// TODO Auto-generated method stub
-		
+	public int incrementWorkersCount()
+	{
+		return this.workerCount.incrementAndGet();
 	}
-
+	
 	@Override
-	public void setManager(Manager manager) throws RemoteException {
-		this.setManager(manager);
+	public int decrementWorkersCount()
+	{
+		return this.workerCount.decrementAndGet();
 	}
+	
 
 }

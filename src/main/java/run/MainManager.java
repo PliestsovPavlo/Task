@@ -10,15 +10,6 @@ public class MainManager {
 
 	public static void main(String[] args) {
 
-		try {
-			try {
-				Manager man = new Manager();
-
-			} catch (InterruptedException | ExecutionException | IOException e) {
-				System.err.println(e.toString());
-			}
-		} catch (NotBoundException e) {
-			System.err.println(e.toString());
-		}
+		Manager man = new Manager();
 	}
 }
