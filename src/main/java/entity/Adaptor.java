@@ -69,7 +69,7 @@ public class Adaptor implements RemoteAdaptor, Serializable, Runnable {
 		}catch (Exception e) {
 			System.err.println(e.toString());
 			synchronized (this) {
-				System.out.println("wait.........");
+				System.out.println("wait........");
 				this.wait();
 			}
 		}
