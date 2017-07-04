@@ -46,7 +46,6 @@ public class Adaptor implements RemoteAdaptor, Serializable {
 			this.manager = remoteManager;
 			remoteManager.notify();
 			System.out.println("notif");
-			//				this.setManager(remoteManager.takeManager());
 			remoteManager.addAdaptor(this);
 		}catch (Exception e) {
 			System.err.println(e.toString());

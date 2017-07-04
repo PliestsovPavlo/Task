@@ -22,7 +22,7 @@ public class FillDB {
 		Jedis jedis = new Jedis();
 		
 
-		for (int i = 0; i < 100; i++) {
+		for (int i = 0; i < 1000; i++) {
 
 			Job job = new Job(i + 1, "message", apis);
 			jedis.lpush("aaa", handler.serialize(job));
