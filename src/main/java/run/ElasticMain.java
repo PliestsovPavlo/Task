@@ -2,10 +2,10 @@ package run;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import handlers.elastic.ElasticHandler;
+import handlers.elastic.ElasticHandlerImpl;
 import helpers.redis.RedisHelper;
 import helpers.redis.RedisHelperImpl;
 
@@ -21,7 +21,7 @@ public class ElasticMain {
 			list.add(redis.lpop("aaa"));
 		}
 		
-		ElasticHandler elasticHandler = new ElasticHandler();
+		ElasticHandler elasticHandler = new ElasticHandlerImpl();
 		elasticHandler.createIndex("some_index");
 		System.out.println("written");
 		
