@@ -27,12 +27,14 @@ public class ElasticHandlerImpl implements ElasticHandler{
 		prepareConnection();
 	}
 
+	//add json to index 
 	public void addToIndex(String name, String type, String id, String json) throws IOException{
 		
 		IndexResponse ir = client.prepareIndex(name, type, id).setSource(json, XContentType.JSON).get();
 		System.out.println(json+" is added to "+name+" index with id "+id);
 	}
 	
+	//create a index if it dosn`t exist
 	public void createIndex(String name) throws IOException{
 		
 		try{	
@@ -45,6 +47,7 @@ public class ElasticHandlerImpl implements ElasticHandler{
 		
 	}
 	
+	// connect to server
 	public void prepareConnection() {
 	try {
 		client = new PreBuiltTransportClient(Settings.EMPTY)
@@ -53,13 +56,15 @@ public class ElasticHandlerImpl implements ElasticHandler{
 		System.err.println(e.toString());
 	}
 	}
-	
+
+	//close connection	
 	public void closeConnection(){
 		if(client != null){
 			client.close();
 		}
 	}
 	
+	//search index
 	public void searchIndex(String name){
 	try{
 	SearchResponse searchResponse = client.prepareSearch(name).get();
@@ -69,6 +74,7 @@ public class ElasticHandlerImpl implements ElasticHandler{
 	}
 	}
 	
+	//search by id in index "name"
 	public void searchById(String name, String type, String id){
 		GetResponse response = client.prepareGet(name, type, id).get();
 		if(response.isExists()){
@@ -76,11 +82,13 @@ public class ElasticHandlerImpl implements ElasticHandler{
 		}
 	}
 	
+	//delete one record by id in index "name"
 	public void deleteByIndexById(String name, String type, String id){
 		DeleteResponse deleteResponse = client.prepareDelete(name, type, id).get();
 		System.out.println("Record with id "+id+" was DELETED from index "+name);
 	}
 	
+	//delete INDEX by name
 	public void deleteIndexByName(String index){
 		IndicesAdminClient adminClient = client.admin().indices();
 		DeleteIndexResponse response = adminClient.delete(new DeleteIndexRequest(index)).actionGet();
