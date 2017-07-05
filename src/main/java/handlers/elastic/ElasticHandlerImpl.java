@@ -29,9 +29,18 @@ public class ElasticHandlerImpl implements ElasticHandler{
 	private String json = redis.lpop("aaa");
 	
 	private TransportClient client;
-				
-	public ElasticHandlerImpl() throws IOException {
+	
+	private static ElasticHandlerImpl elasticHandlerImpl;
+	
+	private ElasticHandlerImpl() throws IOException {
 		prepareConnection();
+	}
+	
+	public static ElasticHandlerImpl getInstance() throws IOException{
+		if(elasticHandlerImpl == null){
+			elasticHandlerImpl = new ElasticHandlerImpl();
+		}
+		return elasticHandlerImpl;
 	}
 
 	//add json to index 
@@ -112,6 +121,8 @@ public class ElasticHandlerImpl implements ElasticHandler{
 			createIndex("new_index");
 			searchIndex("new_index");
 			addToIndex("new_index", "some_type", "1", json);
+			deleteIndexByName("new_index");
+			
 			closeConnection();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

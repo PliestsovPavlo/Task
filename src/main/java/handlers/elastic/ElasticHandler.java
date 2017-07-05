@@ -12,5 +12,6 @@ public interface ElasticHandler extends Runnable{
 	void searchById(String name, String type, String id);
 	void deleteByIndexById(String name, String type, String id);
 	void deleteIndexByName(String index);
+	
 
 }

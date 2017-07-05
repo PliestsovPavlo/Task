@@ -20,7 +20,7 @@ public class ElasticMain {
 //			list.add(redis.lpop("aaa"));
 //		}
 		
-//		ElasticHandler elasticHandler = new ElasticHandlerImpl();
+		
 //		elasticHandler.createIndex("some_index");
 //		System.out.println("written");
 		
@@ -38,10 +38,8 @@ public class ElasticMain {
 		
 //		elasticHandler.closeConnection();
 		
-		new Thread(new ElasticHandlerImpl()).run();
-		new Thread(new ElasticHandlerImpl()).run();
-		new Thread(new ElasticHandlerImpl()).run();
-		new Thread(new ElasticHandlerImpl()).run();
+		new Thread(ElasticHandlerImpl.getInstance()).run();
+		
 
 		
 	}
