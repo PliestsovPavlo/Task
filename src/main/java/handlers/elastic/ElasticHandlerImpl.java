@@ -36,7 +36,7 @@ public class ElasticHandlerImpl implements ElasticHandler{
 		prepareConnection();
 	}
 	
-	public static ElasticHandlerImpl getInstance() throws IOException{
+	public static synchronized ElasticHandlerImpl getInstance() throws IOException{
 		if(elasticHandlerImpl == null){
 			elasticHandlerImpl = new ElasticHandlerImpl();
 		}
