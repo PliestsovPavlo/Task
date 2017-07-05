@@ -39,6 +39,7 @@ public class ElasticMain {
 //		elasticHandler.closeConnection();
 		
 		new Thread(ElasticHandlerImpl.getInstance()).run();
+		new Thread(ElasticHandlerImpl.getInstance()).run();
 		
 
 		
