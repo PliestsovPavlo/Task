@@ -18,8 +18,15 @@ import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 
+import helpers.redis.RedisHelper;
+import helpers.redis.RedisHelperImpl;
+
 public class ElasticHandlerImpl implements ElasticHandler{
-//	private static final Logger LOGGER; 
+	
+//	private static final Logger LOGGER = Logger.getLogger(ElasticHandlerImpl.class);
+		
+	private RedisHelper redis = new RedisHelperImpl();
+	private String json = redis.lpop("aaa");
 	
 	private TransportClient client;
 				
@@ -79,6 +86,7 @@ public class ElasticHandlerImpl implements ElasticHandler{
 		GetResponse response = client.prepareGet(name, type, id).get();
 		if(response.isExists()){
 			System.out.println(response.getSourceAsString());
+//			LOGGER.info("info");
 		}
 	}
 	
@@ -94,6 +102,20 @@ public class ElasticHandlerImpl implements ElasticHandler{
 		DeleteIndexResponse response = adminClient.delete(new DeleteIndexRequest(index)).actionGet();
 		if(response.isAcknowledged()){
 			System.out.println("Index "+index+" DELETED!!!");
+		}
+	}
+
+	@Override
+	public void run() {
+		try {
+			prepareConnection();
+			createIndex("new_index");
+			searchIndex("new_index");
+			addToIndex("new_index", "some_type", "1", json);
+			closeConnection();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 	
